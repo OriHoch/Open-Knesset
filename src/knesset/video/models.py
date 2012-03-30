@@ -20,3 +20,6 @@ class Video(models.Model):
     object_pk = models.TextField()
     content_object = generic.GenericForeignKey(ct_field="content_type", fk_field="object_pk")
     reviewed = models.BooleanField(default=False)
+    is_processing_remotely = models.BooleanField(default=False)
+    is_done_processing = models.BooleanField(default=False)
+    processing_remotely_by = models.CharField(max_length=255,default='')

@@ -184,6 +184,15 @@ YOUTUBE_AUTHSUB_TOKEN=''
 # to get a developer key goto: http://code.google.com/apis/youtube/dashboard
 YOUTUBE_DEVELOPER_KEY=''
 
+# this is a dict that is used to authenticate remote processes
+# it should look something like this:
+# {
+#    'SECRET KEY':'identifier',
+#    '394EKDok3peok':'worker1.oknesset',
+#    'eoid4ekLKD':'worker2.oknesset',
+# }
+VIDEO_COMMITTEE_UPDATE_AJAX_SECRETS={}
+
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.dummy.DummyCache',

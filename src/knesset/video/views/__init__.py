@@ -2,6 +2,11 @@ import json
 from knesset.hashnav import ListView
 from django.http import HttpResponse
 from knesset.video.models import Video
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from knesset.committees.models import Committee
+from knesset.video.utils import get_videos_queryset
+from CommitteeUpdateAjaxView import CommitteeUpdateAjaxView
 
 class VideoListView (ListView):
     def GET(self, *args, **kwargs):
@@ -36,3 +41,10 @@ def videoListApproveAjaxView(request):
     else:
         res={'status':False,'msg':'not authenticated'}
     return HttpResponse(json.dumps(res), mimetype="application/json")
+
+
+
+
+
+
+

@@ -3,6 +3,7 @@
 from youtube import testYoutube
 from parse_dict import testParseDict
 from mms import testMms
+from lock import testLock
 
 from django.test import TestCase
 import collections

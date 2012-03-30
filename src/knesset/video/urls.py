@@ -2,7 +2,7 @@
 from django.conf.urls.defaults import patterns, url
 from django.utils.translation import ugettext
 from models import Video
-from views import VideoListView, videoListApproveAjaxView
+from views import VideoListView, videoListApproveAjaxView, CommitteeUpdateAjaxView
 
 video_list_view = VideoListView(
     queryset = Video.objects.all().order_by('reviewed','-published'),
@@ -13,4 +13,5 @@ video_list_view = VideoListView(
 urlpatterns = patterns('',
     url(r'^$', video_list_view, name='video-list'),
     url(r'^approve_ajax/', videoListApproveAjaxView),
+    url(r'^committee_update_ajax/', CommitteeUpdateAjaxView),
 )
