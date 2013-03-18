@@ -97,6 +97,15 @@ class MeetingDetailView(DetailView):
     def get_queryset(self):
         return super(MeetingDetailView, self).get_queryset().select_related('committee')
 
+    def get_context_protocol_parts(self, context, *args, **kwargs):
+        cm = context['object']
+        parts_lengths = {}
+        for part in cm.parts.all():
+            parts_lengths[part.id] = len(part.body)
+        context['parts_lengths'] = json.dumps(parts_lengths)
+        context['parts']=cm.parts.all()
+        return context
+
     def get_context_data(self, *args, **kwargs):
         context = super(MeetingDetailView, self).get_context_data(*args, **kwargs)
         cm = context['object']
@@ -116,11 +125,7 @@ class MeetingDetailView(DetailView):
         if page:
             context['description'] += _(' page %(page)s') % {'page': page}
         context['colors'] = colors
-        parts_lengths = {}
-        for part in cm.parts.all():
-            parts_lengths[part.id] = len(part.body)
-        context['parts_lengths'] = json.dumps(parts_lengths)
-        context['parts']=cm.parts.all()
+        context=self.get_context_protocol_parts(context,*args,**kwargs)
         context['paginate_by'] = COMMITTEE_PROTOCOL_PAGINATE_BY
 
         if cm.committee.type == 'plenum':

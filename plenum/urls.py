@@ -8,5 +8,6 @@ meetings_list = PlenumMeetingsListView(queryset=CommitteeMeeting.objects.all(), 
 plenumurlpatterns = patterns ('',
 	url(r'^plenum/$', PlenumView.as_view(), name='plenum'),
 	url(r'^plenum/(?P<pk>\d+)/$', PlenumMeetingDetailView.as_view(), name='plenum-meeting'),
+	url(r'^plenum/(?P<pk>\d+)/(?P<sectionid>\d+)/$', PlenumMeetingDetailView.as_view(), name='plenum-meeting-section'),
 	url(r'^plenum/all_meetings/$', meetings_list , {'committee_id':0}, name='plenum-all-meetings'),
 )

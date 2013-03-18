@@ -682,8 +682,8 @@ ol.inline {
   margin-right: 0;
   list-style: none;
 }
-ul.inline > li,
-ol.inline > li {
+ul.inline  > li,
+ol.inline  > li {
   display: inline-block;
   padding-right: 5px;
   padding-left: 5px;
@@ -2455,7 +2455,7 @@ table th[class*="span"],
 .open {
   *z-index: 1000;
 }
-.open > .dropdown-menu {
+.open  > .dropdown-menu {
   display: block;
 }
 .pull-right > .dropdown-menu {
@@ -5446,26 +5446,6 @@ form .helptext {
 #app-footer .hasadna form {
   margin: 0;
 }
-h1 {
-  font-size: 42px;
-  letter-spacing: 1px;
-}
-h2 {
-  font-size: 20px;
-  letter-spacing: 1px;
-}
-h3 {
-  font-size: 14px;
-  letter-spacing: 1px;
-}
-h4 {
-  font-size: 12px;
-  letter-spacing: 1px;
-}
-ul,
-ol {
-  margin: 0px 25px 10px 0px;
-}
 .card {
   background: #ffffff;
   border: 1px solid #e6e6e6;
@@ -5569,6 +5549,9 @@ ol {
 }
 .card-main ul li {
   display: inline-block;
+}
+.card-main .nav-stacked li {
+  display: block;
 }
 .card-main .card-details .links {
   position: absolute;
