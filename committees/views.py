@@ -111,25 +111,28 @@ class MeetingDetailView(DetailView):
                                    % {'committee':cm.committee.name,
                                       'date':cm.date_string,
                                       'topic':cm.topics}
-        context['description'] = clean_string(context['description']).replace('"','')
-        page = self.request.GET.get('page',None)
+        context['description'] = clean_string(context['description']).replace('"', '')
+        page = self.request.GET.get('page', None)
         if page:
-            context['description'] += _(' page %(page)s') % {'page':page}
+            context['description'] += _(' page %(page)s') % {'page': page}
         context['colors'] = colors
         parts_lengths = {}
         for part in cm.parts.all():
             parts_lengths[part.id] = len(part.body)
         context['parts_lengths'] = json.dumps(parts_lengths)
-        context['parts']=cm.parts.all()
         context['paginate_by'] = COMMITTEE_PROTOCOL_PAGINATE_BY
 
-        #get meeting members with presence calculation
-        meeting_members_ids = set(m.id for m in cm.mks_attended.all())
-        context['members'] = [m for m in cm.committee.members_by_presence()
-                              if m.id in meeting_members_ids]
+        if cm.committee.type == 'plenum':
+            context['members'] = cm.mks_attended.order_by('name')
+            context['hide_member_presence'] = True
+        else:
+            #get meeting members with presence calculation
+            meeting_members_ids = set(m.id for m in cm.mks_attended.all())
+            context['members'] = [m for m in cm.committee.members_by_presence()
+                                  if m.id in meeting_members_ids]
+            context['hide_member_presence'] = False
 
         return context
-
 
     @hashnav_method_decorator(login_required)
     def post(self, request, **kwargs):
