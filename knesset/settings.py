@@ -169,6 +169,7 @@ INSTALLED_APPS = (
     'polyorg',
     'plenum',
     'tinymce',
+    'suggestions',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
@@ -266,9 +267,10 @@ SOUTH_TESTS_MIGRATE = False
 TINYMCE_DEFAULT_CONFIG = {
     'mode': "textareas",
     'theme': "advanced",
+    'plugins': "paste",
     'theme_advanced_buttons1': ("bold,italic,underline,|,undo,redo,|,"
                                 "link,unlink,|,bullist,numlist,|"
-                                ",cut,copy,paste,|,cleanup"),
+                                ",cut,copy,paste,pastetext,|,cleanup"),
     'theme_advanced_buttons2': "",
     'theme_advanced_buttons3': "",
     'theme_advanced_toolbar_align': "center",
