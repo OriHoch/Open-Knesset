@@ -33,7 +33,12 @@
             <li><a href="{% url committee-list %}">{% trans "Committees" %}</a> <span class="divider">/</span></li>
         {% endifnotequal %}
         <li><a href="{{ object.committee.get_absolute_url }}">{{ object.committee }}</a> <span class="divider">/</span></l1>
-        <li class="active">{{object.date_string}}</li>
+        {% ifnotequal current_section_title "" %}
+            <li><a href="{{ object.get_absolute_url }}">{{object.date_string}}</a> <span class="divider">/</span></li>
+            <li class="active">{{current_section_title}}</li>
+        {% else %}
+            <li class="active">{{object.date_string}}</li>
+        {% endifnotequal %}
 {% endblock %}
 
 {% block messages %}
@@ -46,6 +51,7 @@
 </span>
 {% endblock %}
 {% block divcontent %}
+    {% if not hideCardMain %}
     <section class="card card-main">
         <div class="row">
             <div class="span6 card-details">
@@ -59,7 +65,7 @@
                                 <li class="nav-header">ניווט בפרוטוקול</li>
                                 {% for titlepart in titleparts %}
                                 <li{% ifequal title_sectionid titlepart.order %} class='active'{% endifequal %}>
-                                    <a href="{% url plenum-meeting-section pk=object.id sectionid=titlepart.order %}#protocol-title-anchor" >{{titlepart.header}}</a>
+                                    <a href="{% url plenum-meeting-section pk=object.id sectionid=titlepart.order %}" >{{titlepart.header}}</a>
                                 </li>
                                 {% endfor %}
                             </ul>
@@ -84,6 +90,7 @@
             </div>
         </div>
     </section>
+    {% endif %}
     
     <div class="row">
         <div class="span9 cards">
@@ -118,6 +125,7 @@
                 </section>
             {% endifnotequal %}
 
+            {% if not hideProtocol %}
             {% autopaginate parts paginate_by %}
             {% include "committees/_next_prev_title_parts.html" %}
             <div class="text-center">{% paginate %}</div>
@@ -203,9 +211,25 @@
             </section> <!-- protocol -->
             <div class="text-center">{% paginate %}</div>
             {% include "committees/_next_prev_title_parts.html" %}
+            {% endif %}
         </div>
 
         <div class="span3">
+            {% if object.committee.type = 'plenum' and not hideProtocol %}
+            <aside class='sidebar'>
+                <header><h2>ניווט בפרוטוקול</h2></header>
+                <nav>
+                    <ul class="nav nav-pills nav-stacked card">
+                        {% for titlepart in titleparts %}
+                        <li{% ifequal title_sectionid titlepart.order %} class='active'{% endifequal %}>
+                            <a href="{% url plenum-meeting-section pk=object.id sectionid=titlepart.order %}" >{{titlepart.header}}</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </nav>
+            </aside>
+            {% endif %}
+        
             <aside class="sidebar sidebar-agendas">
                 <header><h2>{% trans "Tags" %}</h2></header>
                 <div id="tagging-container">

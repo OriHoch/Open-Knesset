@@ -1,10 +1,10 @@
 {% if has_next_title_sectionid or has_prev_title_sectionid %}
     <div class='clearfix'>
         {% if has_next_title_sectionid %}
-        <div class='pull-right'><a href='{% url plenum-meeting-section pk=object.id sectionid=next_title_sectionid %}#protocol-title-anchor'>לקטע הבא &gt;</a></div>
+        <div class='pull-right'><a href='{% url plenum-meeting-section pk=object.id sectionid=next_title_sectionid %}'>לקטע הבא &gt;</a></div>
         {% endif %}
         {% if has_prev_title_sectionid %}
-        <div class='pull-left'><a href='{% url plenum-meeting-section pk=object.id sectionid=prev_title_sectionid %}#protocol-title-anchor'>&lt; לקטע הקודם</a></div>
+        <div class='pull-left'><a href='{% url plenum-meeting-section pk=object.id sectionid=prev_title_sectionid %}'>&lt; לקטע הקודם</a></div>
         {% endif %}
     </div>
 {% endif %} 

@@ -44,7 +44,9 @@ class PlenumMeetingDetailView(MeetingDetailView):
             context['parts_lengths'] = json.dumps(parts_lengths)
             context['parts']=cm.parts.all().filter(order__gt=sectionid-1,order__lt=next_sectionid).order_by('order')
             context['title_sectionid']=sectionid
+            context['hideCardMain']=True
         else:
+            context['hideProtocol']=True
             context=super(PlenumMeetingDetailView, self).get_context_protocol_parts(context, *args, **kwargs)
         return context
 
@@ -57,5 +59,7 @@ class PlenumMeetingDetailView(MeetingDetailView):
             if len(header.strip())==0:
                 header=tpart.body.split('\n')[0]
             tparts.append({'id':tpart.id,'header':header,'order':tpart.order})
+            if kwargs.has_key('sectionid') and int(kwargs['sectionid'])==tpart.order:
+                context['current_section_title']=header.strip()
         context['titleparts']=tparts
         return context

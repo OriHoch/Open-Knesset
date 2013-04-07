@@ -29,6 +29,16 @@ def get_all_mk_names():
     mk_names.extend(mk_aliases.values_list('name',flat=True))
     return (mks,mk_names)
     
+def _isValidTitle(title):
+    if (
+        u'דברי הכנסת' in title
+        or (u'הישיבה ה' in title and u'של הכנסת ה' in title)
+        or u'תוכן עניינים' in title
+    ):
+        return False
+    else:
+        return True
+    
 def _plenum_parseParaElement(para):
     isBold=False
     if para.find('emphasis') is not None:
@@ -60,7 +70,7 @@ def _plenum_parsePara(txt,t,titles):
             titles.append({u't':'',u'c':[
                 {u't':txt,u's':0}
             ]})
-    elif t=='title':
+    elif t=='title' and _isValidTitle(txt):
         titles.append({u't':txt,u'c':[]})
     else:
         title=titles[len(titles)-1]
@@ -104,7 +114,6 @@ def create_plenum_protocol_parts(meeting,mks=None,mk_names=None):
     for title in titles:
         titleHeader=title['t'].strip()
         titleBody=[]
-        #_savePart(meeting,'',t,'title')
         for child in title['c']:
             if child['s']==1:
                 # it's a speaker, save the aggregated title texts
@@ -123,7 +132,7 @@ def create_plenum_protocol_parts(meeting,mks=None,mk_names=None):
                 t=child['t'].strip()
                 if len(t)>0:
                     titleBody.append(t)
-        if len(titleHeader)>0 or len(titleBody)>0:
+        if (len(titleHeader)>0 or len(titleBody)>0):
             _savePart(meeting,titleHeader,'\n\n'.join(titleBody),'title')
     if len(_parts)>0:
         # find duplicates
