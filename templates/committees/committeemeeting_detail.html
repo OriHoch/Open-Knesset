@@ -51,8 +51,7 @@
 </span>
 {% endblock %}
 {% block divcontent %}
-    {% if not hideCardMain %}
-    <section class="card card-main">
+    <section class="card card-main{% if hideCardMain %} card-hidemain{% endif %}">
         <div class="row">
             <div class="span6 card-details">
                 <div class="spacer fill">
@@ -60,6 +59,7 @@
                     {% ifequal object.committee.type 'committee' %}
                         <p>{{title}}</p>
                     {% else %}
+                        {% if not hideCardMain %}
                         <nav>
                             <ul class="nav nav-pills nav-stacked card">
                                 <li class="nav-header">ניווט בפרוטוקול</li>
@@ -70,9 +70,11 @@
                                 {% endfor %}
                             </ul>
                         </nav>
+                        {% endif %}
                     {% endifequal %}
                 </div>
             </div>
+            {% if not hideCardMain %}
             <div class="span6 social-details">
                 <div class="spacer fill">
                     <h2>{% trans "MKs attended" %}</h2>
@@ -88,9 +90,9 @@
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
         </div>
     </section>
-    {% endif %}
     
     <div class="row">
         <div class="span9 cards">
@@ -130,7 +132,7 @@
             {% include "committees/_next_prev_title_parts.html" %}
             <div class="text-center">{% paginate %}</div>
             <section class="card card-list" id='protocol-title-anchor'>
-                <header><h2>{% trans 'Protocol' %}</h2></header>
+                <header><h2>{% if hideCardMain and current_section_title != '' %}{{current_section_title}}{% else %}{% trans 'Protocol' %}{% endif %}</h2></header>
                     {% get_annotations_for parts as annotation_dict %}
                     <div class="protocol">
                     {% for speech_part in parts %}
@@ -175,6 +177,7 @@
                         </div>
                 </script>
                       {% endif %}
+                      {% if not hideCardMain or not forloop.first or speech_part.body != "" %}
                       <div class="speech-{{ object.id }} speech-container row" id="speech-{{ object.id }}-{{ speech_part.order }}">
                         <div class="text-speaker span9" {% if speech_part.header %}style="background-color:{{ colors|hash:speech_part.header }}" {% endif %}>
                             {% firstof speech_part.header "&nbsp;" %}
@@ -203,9 +206,10 @@
                                 {% endwith %}
                             </div>
                         </div>
-                      {% endwith %}
-                      {% endwith %}
                       </div>
+                      {% endif %}
+                      {% endwith %}
+                      {% endwith %}
                     {% endfor %}
                     </div>
             </section> <!-- protocol -->
