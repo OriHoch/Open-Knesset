@@ -1,4 +1,4 @@
-<!DOCTYPE html>{% load i18n search avatar_tags %}{% load static from staticfiles %}
+<!DOCTYPE html>{% load i18n search avatar_tags feedback %}{% load static from staticfiles %}
 <html lang="{{ LANGUAGE_CODE }}" dir="{{ LANGUAGE_BIDI|yesno:"rtl,ltr" }}" class="{{ LANGUAGE_BIDI|yesno:"rtl,ltr" }}">
 <head>
     <meta charset="utf-8" >
@@ -16,13 +16,13 @@
     <meta property="og:image" content="/static/img/oknesset-logo-small.png"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link rel="stylesheet" type="text/css" href="{% static "css/app.css" %}?v=23" />
+    <link rel="stylesheet" type="text/css" href="{% static "css/app.css" %}?v=26" />
     <link rel="stylesheet" type="text/css" href="{% static "css/responsive.css" %}"/>
 
 <!--
     <link href="{% static "css/common.css" %}?v=22" rel="stylesheet" type="text/css" media="screen" />
-    <link href="{% static "css/jquery.jgrowl.css" %}" rel="stylesheet" type="text/css" media="screen" />
 -->
+    <link href="{% static "css/jquery.jgrowl.css" %}" rel="stylesheet" type="text/css" media="screen" />
     <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
       <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
@@ -56,32 +56,36 @@
             </span>
           </a>
           <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
-            <li><a href="{% url edit-profile %}">{% trans 'Edit Profile' %}</a></li>
-            <li><a href="{% url logout %}?next={{request.get_full_path}}">{% trans 'Logout' %}</a></li>
+            <li><a href="{% url 'edit-profile' %}">{% trans 'Edit Profile' %}</a></li>
+            <li><a href="{% url 'logout' %}?next={{request.get_full_path}}">{% trans 'Logout' %}</a></li>
           </ul>
           {% else %}
-              <a href='{% url login %}?next={{request.get_full_path}}'>{% trans 'login' %}</a>
+              <a href='{% url 'login' %}?next={{request.get_full_path}}'>{% trans 'login' %}</a>
           {% endif %}
         </div>
       </div>
 
       <ul class="nav nav-pills">
-        <li id="nav-parties" {% block nav-parties %} {% endblock %} ><a href="{% url parties-members %}">{% trans "Members and Parties" %}</a></li>
-        <li id="laws" {% block nav-laws %} {% endblock %} > <a href="{% url bill-list %}">{% trans "Legislation" %}</a> </li>
-        <li id="nav-committees" {% block nav-committees %} {% endblock %} > <a href="{% url committee-list %}">{% trans 'Committees' %}</a> </li>
-        <li id="nav-plenum" {% block nav-plenum %} {% endblock %} ><a href="{% url plenum %}">מליאה</a></li>
-        <li id="nav-agendas" {% block nav-agendas %} {% endblock %} > <a href="{% url agenda-list %}">{% trans 'Agendas' %}</a> </li>
+        <li id="nav-parties" {% block nav-parties %} {% endblock %} ><a href="{% url 'parties-members-index' %}">{% trans "Members and Parties" %}</a></li>
+        <li id="laws" {% block nav-laws %} {% endblock %} > <a href="{% url 'bill-list' %}">{% trans "Legislation" %}</a> </li>
+        <li id="votes" {% block nav-votes %} {% endblock %} > <a href="{% url 'vote-list' %}">{% trans "Votes" %}</a> </li>
+        <li id="nav-committees" {% block nav-committees %} {% endblock %} > <a href="{% url 'committee-list' %}">{% trans 'Committees' %}</a> </li>
+        <li id="nav-plenum" {% block nav-plenum %} {% endblock %} ><a href="{% url 'plenum' %}">מליאה</a></li>
+        <li id="nav-agendas" {% block nav-agendas %} {% endblock %} > <a href="{% url 'agenda-list' %}">{% trans 'Agendas' %}</a> </li>
       </ul>
     </header>
     <div id="helptextcontainer"></div>
     <section class="container">
 {% if not hide_crumbs %}
         <ul class="breadcrumb">
-            <li><a class="home-icon" href="{% url main %}">{% trans "Homepage" %}</a> <span class="divider">/</span></li>
+            <li><a class="home-icon" href="{% url 'main' %}">{% trans "Homepage" %}</a> <span class="divider">/</span></li>
             {% block breadcrumbs %}{% endblock %}
         </ul>
 {% endif %}
         <div id="cse" class="main" style="display:none;"></div>
+        {% add_feedback_suggestion_form %}
+        {% trans "Feedback" as feedback_button_text %}
+        {% include "auxiliary/_suggestion_button.html" with suggest_for="feedback" button_text=feedback_button_text %}
         <div id="content-main" class="main">
             {% block content-main %}{% endblock %}
             <div class="clear"></div>
@@ -117,12 +121,12 @@
             <div class="row">
                 <nav class="span8">
                     <ul class="nav nav-pills">
-                        <li><a class="home-icon" href="{% url main %}">{% trans "Homepage" %}</a></li>
-                        <li><a href="{% url party-list %}">{% trans "Members and Parties" %}</a></li>
-                        <li><a href="{% url bill-list %}">{% trans "Legislation" %}</a> </li>
-                        <li><a href="{% url committee-list %}">{% trans 'Committees' %}</a> </li>
-                        <li><a href="{% url plenum %}">מליאה</a></li>
-                        <li><a href="{% url agenda-list %}">{% trans 'Agendas' %}</a> </li>
+                        <li><a class="home-icon" href="{% url 'main' %}">{% trans "Homepage" %}</a></li>
+                        <li><a href="{% url 'party-list' %}">{% trans "Members and Parties" %}</a></li>
+                        <li><a href="{% url 'bill-list' %}">{% trans "Legislation" %}</a> </li>
+                        <li><a href="{% url 'committee-list' %}">{% trans 'Committees' %}</a> </li>
+                        <li><a href="{% url 'plenum' %}">מליאה</a></li>
+                        <li><a href="{% url 'agenda-list' %}">{% trans 'Agendas' %}</a> </li>
                     </ul>
                 </nav>
                 <div id="search-bottom" class="span4">
@@ -137,7 +141,7 @@
                     {% blocktrans %}All the information comes from the Knesset's site.
                     This site is maintained by volunteers and is not supported by
                     any political party ...{% endblocktrans %}
-                    <a href="{% url about %}">{% trans "Read more" %}</a>
+                    <a href="{% url 'about' %}">{% trans "Read more" %}</a>
                     </p>
                     </div>
                     <div class="follow-oknesset">
@@ -169,7 +173,7 @@
             <div class="row">
                 <div class="span9">
                     {% trans "Some rights reserved. Using data from the site requires credit" %}
-                    <a href="{% url about %}">{% trans "Details in the link" %}</a>
+                    <a href="{% url 'about' %}">{% trans "Details in the link" %}</a>
                 </div>
                 <div class="span3">
                 <a href="https://play.google.com/store/apps/details?id=org.oknesset" target="_blank">
@@ -182,6 +186,8 @@
         </div>
     </footer>
     <!-- END #footer -->
+{% comment %} Suggestion forms {% endcomment %}
+{% if suggestion_forms %}{% include "auxiliary/_suggestion_forms.html" %}{% endif %}
 <!-- JS Placed at the end of the document so the pages load faster -->
     <script src="{% static "js/jquery-1.8.3.min.js" %}"></script>
     <script src="{% static "js/bootstrap-transition.js" %}"></script>
@@ -197,7 +203,7 @@
     <script src="{% static "js/bootstrap-carousel.js" %}?v=1"></script>
     <script src="{% static "js/bootstrap-typeahead.js" %}"></script>
 
-    <script src="{% url django.views.i18n.javascript_catalog %}"></script>
+    <script src="{% url 'django.views.i18n.javascript_catalog' %}"></script>
     <script src="{% static "js/jquery.jgrowl.js" %}"></script>
     <script src="{% static "js/raphael-min.js" %}"></script>
     <script src="{% static "js/okhelptexts.js" %}"></script>
@@ -206,6 +212,7 @@
     <script src="{% static "js/ok-toggle.js" %}"></script>
     <script src="{% static "js/ok-more.js" %}"></script>
     <script src="{% static "js/ok-search.js" %}?v=3"></script>
+    <script src="{% static "js/ok-suggest.js" %}?v=3"></script>
 <!-- end JS -->
     <script>
         $(function() { 

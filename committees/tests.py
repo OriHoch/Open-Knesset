@@ -1,16 +1,18 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.test import TestCase
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User,Group,Permission
 from django.contrib.contenttypes.models import ContentType
+import unittest
 from annotatetext.models import Annotation
 from actstream.models import Action
 from tagging.models import Tag, TaggedItem
 from laws.models import Bill
-from mks.models import Member
+from mks.models import Member, Knesset
 from links.models import LinkType
-from models import *
+from models import Committee, CommitteeMeeting, Topic
+from models import TOPIC_REJECTED
 
 just_id = lambda x: x.id
 APP = 'committees'
@@ -18,6 +20,8 @@ APP = 'committees'
 class CommitteeMeetingDetailViewTest(TestCase):
 
     def setUp(self):
+        self.knesset = Knesset.objects.create(number=1,
+                            start_date=datetime.today()-timedelta(days=1))
         self.committee_1 = Committee.objects.create(name='c1')
         self.committee_2 = Committee.objects.create(name='c2')
         self.meeting_1 = self.committee_1.meetings.create(date=datetime.now(),
@@ -47,6 +51,7 @@ I have a deadline''')
         self.topic = self.committee_1.topic_set.create(creator=self.jacob,
                                                 title="hello", description="hello world")
         self.tag_1 = Tag.objects.create(name='tag1')
+        self.meeting_1.mks_attended.add(self.mk_1)
 
     def testProtocolPart(self):
         parts_list = self.meeting_1.parts.list()
@@ -167,6 +172,16 @@ I have a deadline''')
                          [self.meeting_1.id, self.meeting_2.id, ],
                          'object_list has wrong objects: %s' % object_list)
 
+    def test_committee_meeting(self):
+        res = self.client.get(self.meeting_1.get_absolute_url())
+        self.assertEqual(res.status_code, 200)
+        self.assertTemplateUsed(res,
+                                'committees/committeemeeting_detail.html')
+        members = res.context['members']
+        self.assertEqual(map(just_id, members),
+                         [self.mk_1.id],
+                         'members has wrong objects: %s' % members)
+
     def testLoginRequired(self):
         res = self.client.post(reverse('committee-meeting',
                            kwargs={'pk': self.meeting_1.id}))
@@ -215,6 +230,7 @@ I have a deadline''')
         self.assertEqual(res.status_code, 200)
         self.assertIn(self.tag_1, self.meeting_1.tags)
 
+    @unittest.skip("creating tags currently disabled")
     def test_create_tag_permission_required(self):
         self.assertTrue(self.client.login(username='jacob', password='JKM'))
         url = reverse('create-tag',
@@ -225,6 +241,7 @@ I have a deadline''')
         self.assertRedirects(res, "%s?next=%s" % (settings.LOGIN_URL, url),
                              status_code=302)
 
+    @unittest.skip("creating tags currently disabled")
     def test_create_tag(self):
         self.assertTrue(self.client.login(username='adrian',
                                           password='ADRIAN'))

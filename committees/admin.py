@@ -1,9 +1,10 @@
+from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.generic import GenericTabularInline
 from django.db.models import Q
 from django.contrib import admin
 from video.models import Video
-from models import *
-
+from models import Committee, CommitteeMeeting, Topic
+from links.models import Link
 
 class CommitteeRelatedVideosInline(generic.GenericTabularInline):
     model = Video
@@ -22,6 +23,7 @@ class CommitteeRelatedVideosInline(generic.GenericTabularInline):
 
 class CommitteeAdmin(admin.ModelAdmin):
     ordering = ('name', )
+    filter_horizontal = ('members','chairpersons','replacements')
     inlines = (CommitteeRelatedVideosInline, )
 
 
@@ -43,9 +45,10 @@ class LinksTable(GenericTabularInline):
 
 class TopicAdmin(admin.ModelAdmin):
     ordering = ('-created', )
+    list_select_related = True
+    exclude = ('meetings', )
     inlines = [
         LinksTable,
     ]
-
 
 admin.site.register(Topic, TopicAdmin)

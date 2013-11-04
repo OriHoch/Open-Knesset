@@ -1,10 +1,14 @@
 #encoding: UTF-8
-from django.conf.urls.defaults import *
+from django.conf.urls import url, patterns
 from django.utils.translation import ugettext
-from django.views.generic.simple import redirect_to
+from django.views.generic import RedirectView
 from hashnav import ListView
-from models import *
-from views import *
+from models import Vote, Bill
+from views import VoteListView, VoteCsvView, VoteDetailView, VoteTagsView
+from views import BillListView, BillCsvView, BillDetailView, BillTagsView
+from views import bill_unbind_vote, bill_auto_complete
+from views import bill_tags_cloud, embed_bill_details
+from views import vote_tags_cloud, vote_auto_complete
 import feeds
 
 vote_view = VoteListView(queryset = Vote.objects.all(),paginate_by=20, extra_context={'votes':True,'title':ugettext('Votes')})
@@ -18,9 +22,9 @@ lawsurlpatterns = patterns ('',
     url(r'^bill/tag/$', bill_tags_cloud, name='bill-tags-cloud'),
     url(r'^bill/rss/$', feeds.Bills(), name='bills-feed'),
     url(r'^bill/csv/$', BillCsvView.as_view()),
-    url(r'^bill/tag/(?P<tag>.*)/$', bill_tag, name='bill-tag'),
-    url(r'^bill/knesset-booklet/(?P<booklet_num>\d+)/$', redirect_to,
-        {'url': '/bill/?booklet=%(booklet_num)s', 'premanent': True }),
+    url(r'^bill/tag/(?P<tag>.*)/$', BillTagsView.as_view(), name='bill-tag'),
+    url(r'^bill/knesset-booklet/(?P<booklet_num>\d+)/$', RedirectView.as_view(
+        url='/bill/?booklet=%(booklet_num)s', permanent=True)),
     url(r'^bill/(?P<pk>\d+)/$', bill_detail_view, name='bill-detail'),
     url(r'^bill/(?P<object_id>\d+)/embed/$', embed_bill_details, name='embed-bill-details'),
     url(r'^bill/(?P<object_id>\d+)/unbind-vote/(?P<vote_id>\d+)/$',
@@ -31,7 +35,7 @@ lawsurlpatterns = patterns ('',
     url(r'^vote/csv/$', VoteCsvView.as_view()),
     url(r'^vote/tag/$', vote_tags_cloud, name='vote-tags-cloud'),
     url(r'^vote/rss/$', feeds.Votes(), name='votes-feed'),
-    url(r'^vote/tag/(?P<tag>.*)/$', vote_tag, name='vote-tag'),
+    url(r'^vote/tag/(?P<tag>.*)/$', VoteTagsView.as_view(), name='vote-tag'),
     url(r'^vote/(?P<pk>\d+)/$', vote_detail_view, name='vote-detail'),
     url(r'^vote/(?P<object_id>\d+)/$', vote_view, name='vote-detail'),
     # TODO:the next url is hardcoded in a js file

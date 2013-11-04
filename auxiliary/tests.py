@@ -83,7 +83,8 @@ class InternalLinksTest(TestCase):
     def setUp(self):
         Knesset.objects._current_knesset = None
         #self.vote_1 = Vote.objects.create(time=datetime.now(),title='vote 1')
-        self.knesset = Knesset.objects.create(number=1)
+        self.knesset = Knesset.objects.create(number=1,
+                        start_date=datetime.date.today()-datetime.timedelta(days=100))
         self.party_1 = Party.objects.create(name='party 1', number_of_seats=4,
                                             knesset=self.knesset)
         self.vote_1 = Vote.objects.create(title="vote 1", time=datetime.datetime.now())
@@ -127,11 +128,11 @@ class InternalLinksTest(TestCase):
 
         test_pages = [reverse('main'), reverse('vote-list'),
                       reverse('bill-list'),
-                      reverse('parties-members')]
+                      reverse('parties-members-list', kwargs={'pk': '1' })]
 
         redirects = [
             reverse('party-list'), reverse('member-list'),
-
+            reverse('parties-members-index'),
         ]
 
         for page in test_pages:
@@ -145,7 +146,9 @@ class InternalLinksTest(TestCase):
                 self.failUnless(link, "There seems to be an empty link in %s (href='')" % page)
                 if (link in visited_links) or (link.startswith("http")) or link.startswith("#"):
                     continue
-                if link.startswith("./"):
+                if link.startswith("../"):
+                    link = '/' + '/'.join(link.split('/')[1:])
+                elif link.startswith("./"):
                     link = link[2:]
                 elif link.startswith("."):
                     link = link[1:]

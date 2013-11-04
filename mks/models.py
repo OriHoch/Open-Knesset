@@ -3,6 +3,7 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 from django.db import models
 from django.core.cache import cache
+from django.core.urlresolvers import reverse
 from django.db.models import Q, Max
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.contrib.auth.models import User
@@ -55,7 +56,10 @@ class Knesset(models.Model):
     objects = KnessetManager()
 
     def __unicode__(self):
-        return unicode(self.number)
+        return _(u'Knesset %(number)d') % {'number': self.number}
+
+    def get_absolute_url(self):
+        return reverse('parties-members-list', kwargs={'pk': self.number})
 
 
 class Party(models.Model):
@@ -67,6 +71,8 @@ class Party(models.Model):
     number_of_seats = models.IntegerField(blank=True, null=True)
     knesset = models.ForeignKey(Knesset, related_name='parties', db_index=True,
                                 null=True, blank=True)
+
+    logo = models.ImageField(blank=True,null=True,upload_to='partyLogos')
 
     objects = BetterManager()
     current_knesset = CurrentKnessetPartyManager()
@@ -83,10 +89,22 @@ class Party(models.Model):
         return "%s/api/party/%s/htmldiv/" % ('', self.id)
 
     def __unicode__(self):
-        return "%s" % self.name
+        if self.is_current:
+            return self.name
+
+        return _(u'%(name)s in Knesset %(number)d') % {
+            'name': self.name,
+            'number': self.knesset.number if self.knesset else 0
+        }
 
     def current_members(self):
-        return self.members.filter(is_current=True).order_by('current_position')
+        # for current knesset, we want to display by selecting is_current,
+        # for older ones, it's not relevant
+        if self.knesset == Knesset.objects.current_knesset():
+            return self.members.filter(
+                is_current=True).order_by('current_position')
+        else:
+            return self.all_members.order_by('current_position')
 
     def past_members(self):
         return self.members.filter(is_current=False)
@@ -125,6 +143,10 @@ class Party(models.Model):
     def get_affiliation(self):
         return _('Coalition') if self.is_coalition else _('Opposition')
 
+    @property
+    def is_current(self):
+        return self.knesset == Knesset.objects.current_knesset()
+
 
 class Membership(models.Model):
     member = models.ForeignKey('Member')
@@ -151,11 +173,11 @@ class Member(models.Model):
     current_position = models.PositiveIntegerField(blank=True, default=999)
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
-    img_url = models.URLField(blank=True, verify_exists=False)
+    img_url = models.URLField(blank=True)
     phone = models.CharField(blank=True, null=True, max_length=20)
     fax = models.CharField(blank=True, null=True, max_length=20)
     email = models.EmailField(blank=True, null=True)
-    website = models.URLField(blank=True, null=True, verify_exists=False)
+    website = models.URLField(blank=True, null=True)
     family_status = models.CharField(blank=True, null=True, max_length=10)
     number_of_children = models.IntegerField(blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
@@ -287,6 +309,9 @@ class Member(models.Model):
             try:
                 return (self.end_date - self.start_date).days
             except TypeError:
+                logger.warn(
+                    'MK %d is not current, but missing end or start date' %
+                    self.id)
                 return None
 
     def average_weekly_presence(self):
@@ -337,9 +362,15 @@ class Member(models.Model):
 
     @property
     def roles(self):
-        """Roles list (splitted by comma)"""
+        """Roles list (splitted by pipe)"""
 
-        return [x.strip() for x in self.get_role.split(',')]
+        return [x.strip() for x in self.get_role.split('|')]
+
+	@property
+	def committees(self):
+		"""Committee list (splitted by comma)"""
+
+		return [x.strip() for x in self.committees.split(',')]
 
     @property
     def is_minister(self):
@@ -362,12 +393,18 @@ class Member(models.Model):
         return self.current_party.is_coalition
 
     def recalc_bill_statistics(self):
-        self.bills_stats_proposed = self.bills.count()
-        self.bills_stats_pre = self.bills.filter(
-            stage__in=['2', '3', '4', '5', '6']).count()
-        self.bills_stats_first = self.bills.filter(
-            stage__in=['4', '5', '6']).count()
-        self.bills_stats_approved = self.bills.filter(stage='6').count()
+        d = Knesset.objects.current_knesset().start_date
+        self.bills_stats_proposed = self.proposals_proposed.filter(
+            date__gte=d).count()
+        self.bills_stats_pre = self.proposals_proposed.filter(
+            date__gte=d,
+            bill__stage__in=['2', '3', '4', '5', '6']).count()
+        self.bills_stats_first = self.proposals_proposed.filter(
+            date__gte=d,
+            bill__stage__in=['4', '5', '6']).count()
+        self.bills_stats_approved = self.proposals_proposed.filter(
+            date__gte=d,
+            bill__stage='6').count()
         self.save()
 
     def recalc_average_weekly_presence_hours(self):

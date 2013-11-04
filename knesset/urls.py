@@ -1,7 +1,7 @@
 from django.conf import settings
-from django.conf.urls.defaults import *
+from django.conf.urls import include, url, patterns
 from django.contrib import admin
-from django.views.generic.simple import redirect_to
+from django.views.generic import RedirectView
 from django.views.decorators.cache import cache_page
 from django.contrib.sitemaps import views as sitemaps_views
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns, static
@@ -24,7 +24,7 @@ from laws.models import Bill
 from polyorg.urls import polyorgurlpatterns
 
 from auxiliary.views import (
-    main, post_annotation, post_details,
+    main, post_annotation, post_details, post_feedback,
     RobotsView, AboutView, CommentsView, add_tag_to_object,
     remove_tag_from_object, create_tag_and_add_to_item, help_page,
     TagList, TagDetail)
@@ -40,7 +40,7 @@ planet_views.post_detail = post_details
 
 urlpatterns = patterns('',
     url(r'^$', main, name='main'),
-    (r'^topic/(?P<tail>(.*))', redirect_to, {'url': '/committee/topic/%(tail)s'}),
+    (r'^topic/(?P<tail>(.*))', RedirectView.as_view(url='/committee/topic/%(tail)s')),
     url(r'^about/$', AboutView.as_view(), name='about'),
     (r'^robots\.txt$', RobotsView.as_view()),
     (r'^api/', include('apis.urls')),
@@ -81,7 +81,9 @@ urlpatterns = patterns('',
     (r'^act/', include('actstream.urls')),
     url(r'^tags/(?P<app>\w+)/(?P<object_type>\w+)/(?P<object_id>\d+)/add-tag/$', add_tag_to_object, name='add-tag-to-object'),
     url(r'^tags/(?P<app>\w+)/(?P<object_type>\w+)/(?P<object_id>\d+)/remove-tag/$', remove_tag_from_object),
-    url(r'^tags/(?P<app>\w+)/(?P<object_type>\w+)/(?P<object_id>\d+)/create-tag/$', create_tag_and_add_to_item, name='create-tag'),
+    # disabled for now, because we don't want users to add more tags.
+    # will be added back in the future, but for editors only.
+    #url(r'^tags/(?P<app>\w+)/(?P<object_type>\w+)/(?P<object_id>\d+)/create-tag/$', create_tag_and_add_to_item, name='create-tag'),
     url(r'^tags/$', TagList.as_view(), name='tags-list'),
     url(r'^tags/(?P<slug>.*)/$', TagDetail.as_view(), name='tag-detail'),
     url(r'^uservote/bill/(?P<object_id>\d+)/(?P<direction>\-?\d+)/?$',
@@ -94,7 +96,14 @@ urlpatterns = patterns('',
     (r'^mmm-documents/', include('mmm.urls')),
     (r'^event/', include('events.urls')),
     (r'^tinymce/', include('tinymce.urls')),
+    (r'^suggestions/', include('suggestions.urls')),
+    url(r'^feedback/', post_feedback, name="feedback-post"),
 )
+
+
 urlpatterns += mksurlpatterns + lawsurlpatterns + committeesurlpatterns + plenumurlpatterns
 urlpatterns += staticfiles_urlpatterns() + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-urlpatterns += polyorgurlpatterns + personsurlpatterns
+# polyorg patterns are removed right now, the cache handling on it's views
+# seems broken, specially when trying to cache querysets
+# urlpatterns += polyorgurlpatterns + personsurlpatterns
+urlpatterns += personsurlpatterns

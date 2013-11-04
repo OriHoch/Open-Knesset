@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-03-12 14:40+0200\n"
-"PO-Revision-Date: 2013-03-12 14:40+0200\n"
+"POT-Creation-Date: 2013-09-20 11:12+0300\n"
+"PO-Revision-Date: 2013-08-26 20:21+0300\n"
 "Last-Translator: Ofri Raviv <ofri.raviv@gmail.com>\n"
 "Language-Team: \n"
 "Language: \n"
@@ -49,7 +49,7 @@ msgstr "האירו"
 
 #: static/js/committeemeeting_detail.js:48
 msgid "Sorry, only logged users can annotate."
-msgstr "מצטער, רק משתמשים יכולים להאיר"
+msgstr "מצטער, רק משתמשים מחוברים יכולים להאיר"
 
 #: static/js/committeemeeting_detail.js:75
 msgid "Please make a selection."
@@ -87,6 +87,53 @@ msgstr "תגים"
 msgid "Committees"
 msgstr "ועדות"
 
+#: static/js/ok-suggest.js:32
+msgid "Your suggestion is submitted. Thank you !"
+msgstr "הצעתך נשלחה. תודה רבה !"
+
+#: static/js/ok-suggest.js:100
+msgid "Pending suggestions"
+msgstr "הצעות ממתינות"
+
+#: static/js/ok-suggest.js:104
+msgid "View pending suggestions"
+msgstr "צפיה בהצעות ממתינות"
+
+#: static/js/ok-suggest.js:142
+msgid "Your Feedback message"
+msgstr "הודעת המשוב שלך"
+
+#: static/js/ok-suggest.js:143
+#, c-format
+msgid ""
+"Hello %s\n"
+"\n"
+"%s"
+msgstr ""
+"שלום %s\n"
+"\n"
+"%s"
+
+#: static/js/ok-suggest.js:151
+msgid "Send email"
+msgstr "שליחת דוא\"ל"
+
+#: static/js/ok-suggest.js:158
+msgid "Apply"
+msgstr "יישם"
+
+#: static/js/ok-suggest.js:166
+msgid "Reject"
+msgstr "דחה"
+
+#: static/js/ok-suggest.js:190
+msgid "Reject reason"
+msgstr "סיבת דחיה"
+
+#: static/js/ok-suggest.js:244
+msgid "You have to be logged in to view suggestions."
+msgstr "עליך להתחבר כדי לצפות בהצעות"
+
 #: static/js/states.js:9
 msgid "members"
 msgstr "ח\"כים"
@@ -110,6 +157,25 @@ msgstr "הקודם"
 #: static/js/tagging.js:31
 msgid "next"
 msgstr "הבא"
+
+#: static/js/tagging.js:129 static/js/tagging.js.c:206
+msgid "tag is already attached to current object"
+msgstr "התגית כבר קיימת באובייקט הנוכחי"
+
+#: static/js/tagging.js:179
+msgid ""
+"the specified tag name does not exist and you do not have permission to add "
+"new tag names, only to attach existing tags"
+msgstr "התגית לא קיימת ואין לך הרשאות ליצירת תגיות חדשות. ניתן רק להוסיף תגיות קיימות."
+
+#: static/js/tagging.js:267 static/js/tagging.js.c:281
+#: static/js/tagging.js:321
+msgid "Delete"
+msgstr "מחק"
+
+#: static/js/tagging.js:330
+msgid "Undo Delete"
+msgstr "בטל מחיקה"
 
 #, fuzzy
 #~ msgid "Clear all"

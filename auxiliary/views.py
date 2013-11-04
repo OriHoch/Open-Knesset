@@ -1,33 +1,91 @@
 import csv, random, tagging, logging
-from datetime import datetime
-from operator import attrgetter
-from django.template import RequestContext
-from django.shortcuts import render_to_response, get_object_or_404
-from django.utils.translation import ugettext as _
-from django.utils import simplejson as json
+from actstream import action
+from annotatetext.views import post_annotation as annotatetext_post_annotation
 from django.conf import settings
+from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.comments.models import Comment
+from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
-from django.http import HttpResponseForbidden, HttpResponseRedirect, \
-    HttpResponse, HttpResponseNotAllowed, HttpResponseBadRequest, Http404
-from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib.contenttypes.models import ContentType
-from django.views.generic.base import TemplateView
-from django.views.generic.detail import DetailView
-from django.views.generic.list import BaseListView, ListView
-from django.contrib.comments.models import Comment
-from actstream import action
-from actstream.models import Action
-from mks.models import Member
-from laws.models import Vote, Bill, get_debated_bills
-from committees.models import Topic, CommitteeMeeting, PUBLIC_TOPIC_STATUS
-from agendas.models import Agenda
+from django.http import (
+    HttpResponseForbidden, HttpResponseRedirect, HttpResponse,
+    HttpResponseNotAllowed, HttpResponseBadRequest, Http404, HttpResponsePermanentRedirect)
+from django.shortcuts import render_to_response, get_object_or_404
+from django.template import RequestContext
+from django.utils import simplejson as json
+from django.utils.translation import ugettext as _
+from django.views.generic import TemplateView, DetailView, ListView
+from django.views.generic.list import BaseListView
+from django.views.decorators.http import require_http_methods
 from tagging.models import Tag, TaggedItem
-from annotatetext.views import post_annotation as annotatetext_post_annotation
-from annotatetext.models import Annotation
-from knesset.utils import notify_responsible_adult, main_actions
+
+from .forms import TidbitSuggestionForm, FeedbackSuggestionForm
+from .models import Tidbit
+from committees.models import CommitteeMeeting
 from events.models import Event
-from .models import  Tidbit
+from knesset.utils import notify_responsible_adult
+from laws.models import Vote, Bill
+from mks.models import Member
+from tagging.utils import get_tag
+from auxiliary.models import TagSynonym
+
+
+class BaseTagMemberListView(ListView):
+    """Generic helper for common tagged objects and optionally member
+    operations. Shoud be inherited by others"""
+
+    url_to_reverse = None  # override in inherited for reversing tag_url
+                           # in context
+
+    @property
+    def tag_instance(self):
+        if not hasattr(self, '_tag_instance'):
+            tag = self.kwargs['tag']
+            self._tag_instance = get_tag(tag)
+
+            if self._tag_instance is None:
+                raise Http404(_('No Tag found matching "%s".') % tag)
+
+        return self._tag_instance
+
+    @property
+    def member(self):
+        if not hasattr(self, '_member'):
+            member_id = self.request.GET.get('member', False)
+
+            if member_id:
+                try:
+                    member_id = int(member_id)
+                except ValueError:
+                    raise Http404(
+                        _('No Member found matching "%s".') % member_id)
+
+                self._member = get_object_or_404(Member, pk=member_id)
+            else:
+                self._member = None
+
+        return self._member
+
+    def get_context_data(self, *args, **kwargs):
+        context = super(BaseTagMemberListView, self).get_context_data(
+            *args, **kwargs)
+
+        context['tag'] = self.tag_instance
+        context['tag_url'] = reverse(self.url_to_reverse,
+                                     args=[self.tag_instance])
+
+        if self.member:
+            context['member'] = self.member
+            context['member_url'] = reverse(
+                'member-detail', args=[self.member.pk])
+
+        user = self.request.user
+        if user.is_authenticated():
+            context['watched_members'] = user.get_profile().members
+        else:
+            context['watched_members'] = False
+
+        return context
 
 
 logger = logging.getLogger("open-knesset.auxiliary.views")
@@ -41,8 +99,15 @@ def help_page(request):
         votes = Vote.objects.filter_and_order(order='controversy')
         context['vote'] = votes[random.randrange(votes.count())]
         context['bill'] = Bill.objects.all()[random.randrange(Bill.objects.count())]
-        tags = Tag.objects.cloud_for_model(Bill)
-        context['tags'] = random.sample(tags, min(len(tags),8)) if tags else None
+
+        tags_cloud = cache.get('tags_cloud', None)
+        if not tags_cloud:
+            tags_cloud = calculate_cloud_from_models(Vote,Bill,CommitteeMeeting)
+            tags_cloud.sort(key=lambda x:x.name)
+            cache.set('tags_cloud', tags_cloud, settings.LONG_CACHE_TIME)
+        context['tags'] = random.sample(tags_cloud,
+                                        min(len(tags_cloud),8)
+                                       ) if tags_cloud else None
         context['has_search'] = False # enable the base template search
         cache.set('help_page_context', context, 300) # 5 Minutes
     template_name = '%s.%s%s' % ('help_page', settings.LANGUAGE_CODE, '.html')
@@ -107,18 +172,47 @@ def main(request):
     #                                     .order_by('-modified')\
     #                                     .select_related('creator')[:10]
     #    cache.set('main_page_context', context, 300) # 5 Minutes
-    NUMOF_EVENTS = 5
+
+    # did we post the TidbitSuggest form ?
+    if request.method == 'POST':
+        # only logged-in users can suggest
+        if not request.user.is_authenticated:
+            return HttpResponseForbidden()
+
+        form = TidbitSuggestionForm(request.POST)
+        if form.is_valid():
+            form.save(request)
+
+        return form.get_response()
+
+    NUMOF_EVENTS = 8
     events = Event.objects.get_upcoming()
     context = {
         'title': _('Home'),
         'hide_crumbs': True,
         'is_index': True,
         'tidbits': Tidbit.active.all().order_by('?'),
+        'suggestion_forms': {'tidbit': TidbitSuggestionForm()},
         'events': events[:NUMOF_EVENTS],
+        'INITIAL_EVENTS': NUMOF_EVENTS,
         'events_more': events.count() > NUMOF_EVENTS,
     }
     template_name = '%s.%s%s' % ('main', settings.LANGUAGE_CODE, '.html')
-    return render_to_response(template_name, context, context_instance=RequestContext(request))
+    return render_to_response(template_name, context,
+                              context_instance=RequestContext(request))
+
+
+@require_http_methods(['POST'])
+def post_feedback(request):
+    "Post a feedback suggestion form"
+    if not request.user.is_authenticated:
+        return HttpResponseForbidden()
+
+    form = FeedbackSuggestionForm(request.POST)
+    if form.is_valid():
+        form.save(request)
+
+    return form.get_response()
 
 
 def post_annotation(request):
@@ -185,12 +279,20 @@ class CommentsView(ListView):
 
     paginate_by = 20
 
+
 def _add_tag_to_object(user, app, object_type, object_id, tag):
     ctype = ContentType.objects.get_by_natural_key(app, object_type)
-    (ti, created) = TaggedItem._default_manager.get_or_create(tag=tag, content_type=ctype, object_id=object_id)
-    action.send(user,verb='tagged', target=ti, description='%s' % (tag.name))
-    url = reverse('tag-detail', kwargs={'slug':tag.name})
-    return HttpResponse("{'id':%d,'name':'%s', 'url':'%s'}" % (tag.id,tag.name,url))
+    (ti, created) = TaggedItem._default_manager.get_or_create(
+        tag=tag,
+        content_type=ctype,
+        object_id=object_id)
+    action.send(user, verb='tagged', target=ti, description='%s' % (tag.name))
+    url = reverse('tag-detail', kwargs={'slug': tag.name})
+    return HttpResponse("{'id':%d, 'name':'%s', 'url':'%s'}" % (tag.id,
+                                                                tag.name,
+                                                                url))
+
+
 
 @login_required
 def add_tag_to_object(request, app, object_type, object_id):
@@ -218,7 +320,11 @@ def remove_tag_from_object(request, app, object_type, object_id):
 
 @permission_required('tagging.add_tag')
 def create_tag_and_add_to_item(request, app, object_type, object_id):
-    """adds tag with name=request.POST['tag'] to the tag list, and tags the given object with it"""
+    """adds tag with name=request.POST['tag'] to the tag list, and tags the given object with it
+    ****
+    Currently not used anywhere, sine we don't want to allow users to add
+    more tags for now.
+    """
     if request.method == 'POST' and 'tag' in request.POST:
         tag = request.POST['tag'].strip()
         msg = "user %s is creating tag %s on object_type %s and object_id %s".encode('utf8') % (request.user.username, tag, object_type, object_id)
@@ -265,8 +371,11 @@ class TagList(ListView):
 
     def get_context_data(self, **kwargs):
         context = super(TagList, self).get_context_data(**kwargs)
-        tags_cloud = calculate_cloud_from_models(Vote,Bill,CommitteeMeeting)
-        tags_cloud.sort(key=lambda x:x.name)
+        tags_cloud = cache.get('tags_cloud', None)
+        if not tags_cloud:
+            tags_cloud = calculate_cloud_from_models(Vote,Bill,CommitteeMeeting)
+            tags_cloud.sort(key=lambda x:x.name)
+            cache.set('tags_cloud', tags_cloud, settings.LONG_CACHE_TIME)
         context['tags_cloud'] = tags_cloud
         return context
 
@@ -277,18 +386,28 @@ class TagDetail(DetailView):
     template_name = 'auxiliary/tag_detail.html'
     slug_field = 'name'
 
-    def create_tag_cloud(self, tag, limit=30):
+    def create_tag_cloud(self, tag, limit=30, bills=None, votes=None,
+                         cms=None):
         """
         Create tag could for tag <tag>. Returns only the <limit> most tagged members
         """
 
         try:
-            mk_limit = int(self.request.GET.get('limit',limit))
+            mk_limit = int(self.request.GET.get('limit', limit))
         except ValueError:
             mk_limit = limit
-        mk_taggeds = [b.proposers.all() for b in TaggedItem.objects.get_by_model(Bill, tag)]
-        mk_taggeds += [v.votes.all() for v in TaggedItem.objects.get_by_model(Vote, tag)]
-        mk_taggeds += [cm.mks_attended.all() for cm in TaggedItem.objects.get_by_model(CommitteeMeeting, tag)]
+        if bills is None:
+            bills = TaggedItem.objects.get_by_model(Bill, tag)\
+                .prefetch_related('proposers')
+        if votes is None:
+            votes = TaggedItem.objects.get_by_model(Vote, tag)\
+                .prefetch_related('votes')
+        if cms is None:
+            cms = TaggedItem.objects.get_by_model(CommitteeMeeting, tag)\
+                .prefetch_related('mks_attended')
+        mk_taggeds = [b.proposers.all() for b in bills]
+        mk_taggeds += [v.votes.all() for v in votes]
+        mk_taggeds += [cm.mks_attended.all() for cm in cms]
         d = {}
         for tagged in mk_taggeds:
             for p in tagged:
@@ -301,20 +420,34 @@ class TagDetail(DetailView):
         mks = tagging.utils.calculate_cloud(mks)
         return mks
 
+    def get(self,*args,**kwargs):
+        tag=self.get_object()
+        ts=TagSynonym.objects.filter(synonym_tag=tag)
+        if len(ts)>0:
+            proper=ts[0].tag
+            url = reverse('tag-detail', kwargs={'slug': proper.name})
+            return HttpResponsePermanentRedirect(url)
+        else:
+            return super(TagDetail, self).get(*args, **kwargs);
+
     def get_context_data(self, **kwargs):
         context = super(TagDetail, self).get_context_data(**kwargs)
         tag = context['object']
         bills_ct = ContentType.objects.get_for_model(Bill)
-        bills = [ti.object for ti in
-                    TaggedItem.objects.filter(tag=tag, content_type=bills_ct)]
+        bill_ids = TaggedItem.objects.filter(
+            tag=tag,
+            content_type=bills_ct).values_list('object_id', flat=True)
+        bills = Bill.objects.filter(id__in=bill_ids)
         context['bills'] = bills
         votes_ct = ContentType.objects.get_for_model(Vote)
-        votes = [ti.object for ti in
-                    TaggedItem.objects.filter(tag=tag, content_type=votes_ct)]
+        vote_ids = TaggedItem.objects.filter(
+            tag=tag, content_type=votes_ct).values_list('object_id', flat=True)
+        votes = Vote.objects.filter(id__in=vote_ids)
         context['votes'] = votes
         cm_ct = ContentType.objects.get_for_model(CommitteeMeeting)
-        cms = [ti.object for ti in
-                    TaggedItem.objects.filter(tag=tag, content_type=cm_ct)]
+        cm_ids = TaggedItem.objects.filter(
+            tag=tag, content_type=cm_ct).values_list('object_id', flat=True)
+        cms = CommitteeMeeting.objects.filter(id__in=cm_ids)
         context['cms'] = cms
         context['members'] = self.create_tag_cloud(tag)
         return context

@@ -1,20 +1,28 @@
-from django.conf.urls.defaults import *
+from django.conf.urls import url, patterns, include
 from piston.resource import Resource
 from django.views.decorators.cache import cache_page
 
-from handlers import *
+from handlers import VoteHandler
+from handlers import BillHandler
+from handlers import MemberHandler
+from handlers import PartyHandler
+from handlers import TagHandler
+from handlers import AgendaHandler
+from handlers import CommitteeHandler
+from handlers import CommitteeMeetingHandler
+from handlers import EventHandler
 
 from resources import v2_api
 
-vote_handler = cache_page(Resource(VoteHandler), 60*15)
-bill_handler = cache_page(Resource(BillHandler), 60*15)
-member_handler = cache_page(Resource(MemberHandler), 60*15)
-party_handler = cache_page(Resource(PartyHandler), 60*15)
-tag_handler = cache_page(Resource(TagHandler), 60*15)
-agenda_handler = cache_page(Resource(AgendaHandler), 60*15)
-committee_handler = cache_page(Resource(CommitteeHandler), 60*15)
-committee_meeting_handler = cache_page(Resource(CommitteeMeetingHandler), 60*15)
-event_handler = cache_page(Resource(EventHandler), 60*15)
+vote_handler = cache_page(60*15)(Resource(VoteHandler))
+bill_handler = cache_page(60*15)(Resource(BillHandler))
+member_handler = cache_page(60*15)(Resource(MemberHandler))
+party_handler = cache_page(60*15)(Resource(PartyHandler))
+tag_handler = cache_page(60*15)(Resource(TagHandler))
+agenda_handler = cache_page(60*15)(Resource(AgendaHandler))
+committee_handler = cache_page(60*15)(Resource(CommitteeHandler))
+committee_meeting_handler = cache_page(60*15)(Resource(CommitteeMeetingHandler))
+event_handler = cache_page(60*15)(Resource(EventHandler))
 
 urlpatterns = patterns('',
       url(r'^vote/$', vote_handler, name='vote-handler'),
@@ -43,4 +51,3 @@ urlpatterns = patterns('',
       url(r'^event/icalendar/(?P<summary_length>\d+)/$', 'events.views.icalendar', name='event-icalendar'),
       (r'^', include(v2_api.urls)),
       )
-

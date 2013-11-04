@@ -1,6 +1,8 @@
 '''
 API for the agendas app
 '''
+from django.utils.timezone import datetime
+
 import tastypie.fields as fields
 from avatar.templatetags.avatar_tags import avatar_url
 from django.contrib.auth.models import User
@@ -9,6 +11,7 @@ from models import Agenda, AgendaVote
 from apis.resources.base import BaseResource
 from mks.models import Member, Party
 
+from operator import itemgetter
 
 class UserResource(BaseResource):
     class Meta(BaseResource.Meta):
@@ -74,6 +77,7 @@ class AgendaResource(BaseResource):
     parties = fields.ListField()
     votes = fields.ListField()
     editors = fields.ListField()
+    ranges = fields.ListField()
 
     class Meta(BaseResource.Meta):
         queryset = Agenda.objects.filter(
@@ -84,19 +88,27 @@ class AgendaResource(BaseResource):
         list_fields = ['name', 'id', 'description', 'public_owner_name']
 
     def dehydrate_members(self, bundle):
-        mks_values = dict(bundle.obj.get_mks_values())
+        rangesString = bundle.request.GET.get('ranges',None)
+        fullRange = rangesString is None
+        if not fullRange:
+            ranges = map(   lambda rangeString:[datetime.strptime(val,"%Y%m") if val else None for val in rangeString.split('-')],
+                            rangesString.split(','))
+            mks_values = dict(bundle.obj.get_mks_values(ranges))
+        else:
+            mks_values = dict(bundle.obj.get_mks_values())
         members = []
         for mk in Member.objects.filter(pk__in=mks_values.keys(),
                                         current_party__isnull=False).select_related('current_party'):
             # TODO: this sucks, performance wise
             current_party = mk.current_party
+            mk_data = mks_values[mk.id]
             members.append(dict(
                 id=mk.id,
                 name=mk.name,
-                score=mks_values[mk.id]['score'],
-                rank=mks_values[mk.id]['rank'],
-                volume=mks_values[mk.id]['volume'],
-                numvotes=mks_values[mk.id]['numvotes'],
+                score=map(itemgetter('score'),mk_data) if type(mk_data) is not dict else mk_data['score'],
+                rank=map(itemgetter('rank'),mk_data) if type(mk_data) is not dict else mk_data['rank'],
+                volume=map(itemgetter('volume'),mk_data) if type(mk_data) is not dict else mk_data['volume'],
+                numvotes=map(itemgetter('numvotes'),mk_data) if type(mk_data) is not dict else mk_data['numvotes'],
                 absolute_url=mk.get_absolute_url(),
                 party=current_party.name,
                 party_url=current_party.get_absolute_url(),
@@ -108,11 +120,19 @@ class AgendaResource(BaseResource):
     def dehydrate_parties(self, bundle):
         party_values = dict(map(lambda party_data:(party_data[0],(party_data[1],party_data[2])),
                             bundle.obj.get_party_values()))
-        return [
-            dict(id=x.id, name=x.name, score=party_values[x.pk][0], volume=party_values[x.pk][1],
-                 absolute_url=x.get_absolute_url())
-            for x in Party.current_knesset.current_parties
-        ]
+        parties = []
+        for party in Party.objects.all():
+            if party.pk in party_values:
+                parties.append(dict(name=party.name, 
+                                    score=party_values[party.pk][0], 
+                                    volume=party_values[party.pk][1],
+                                    absolute_url=party.get_absolute_url()))
+            else:
+                parties.append(dict(name=party.name,
+                                    score=0,
+                                    volume=0,
+                                    absolute_url=party.get_absolute_url()))
+        return parties
 
     def dehydrate_votes(self, bundle):
         return [
@@ -127,3 +147,17 @@ class AgendaResource(BaseResource):
                  avatar=avatar_url(e, 48))
             for e in bundle.obj.editors.all()
         ]
+
+    def dehydrate_ranges(self, bundle):
+        rangesString = bundle.request.GET.get('ranges','-')
+        ranges = map(   lambda rangeString:[int(val) if val else None for val in rangeString.split('-')],
+                        rangesString.split(','))
+        results = []
+        for start,end in ranges:
+            rangeResult = {}
+            if start:
+                rangeResult['from']=datetime(year=start/100,month=start%100,day=1)
+            if end:
+                rangeResult['to']=datetime(year=end/100,month=end%100,day=1)
+            results.append(rangeResult)
+        return results

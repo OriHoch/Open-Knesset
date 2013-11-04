@@ -10,7 +10,6 @@
     <link href="{% static "css/jquery.autocomplete.css" %}" rel="stylesheet" type="text/css" media="screen" />
 {% endblock %}
 {% block extrajs %}
-    <script type="text/javascript" src="{% static "js/tagging.js" %}"></script>
     <script type="text/javascript" src="{% static "annotatetext/annotate.js" %}?v=1"></script>
     <script type="text/javascript" src="{% static "js/jquery.colorPicker.js" %}"></script>
     <script type="text/javascript" src="{% static "js/jquery.autocomplete.js" %}"></script>
@@ -21,6 +20,7 @@
     });
     // current hit count = {% get_hit_count for object %}
 </script>
+{% include "auxiliary/tags_object_edit_extrajs.html" with app_label="committees" object_type="committeemeeting" object_id=object.id %}
 {% endblock %}
 
 
@@ -30,7 +30,7 @@
 
 {% block breadcrumbs %}
         {% ifnotequal object.committee.type 'plenum' %}
-            <li><a href="{% url committee-list %}">{% trans "Committees" %}</a> <span class="divider">/</span></li>
+            <li><a href="{% url 'committee-list' %}">{% trans "Committees" %}</a> <span class="divider">/</span></li>
         {% endifnotequal %}
         <li><a href="{{ object.committee.get_absolute_url }}">{{ object.committee }}</a> <span class="divider">/</span></l1>
         {% ifnotequal current_section_title "" %}
@@ -43,7 +43,7 @@
 
 {% block messages %}
 <span id="message_permission">
-    <a href="{% url edit-profile %}">{% trans "Please validate your email to annotate" %}</a>
+    <a href="{% url 'edit-profile' %}">{% trans "Please validate your email to annotate" %}</a>
 </span>
 <span id="message_staff">
     {% trans "Sorry, only editor can delete annotations." %}
@@ -80,10 +80,16 @@
                     <h2>{% trans "MKs attended" %}</h2>
                     {% include "committees/committee_member_photos.html" with members=members chairpersons=object.committee.chairpersons.all replacements=object.committee.replacements.all%}
 
-                    {% if user.is_authenticated %}
+                    {% if perms.committees.change_committeemeeting %}
                     <form method="post" action="." class="form-inline">{% csrf_token %}
                         <input type="hidden" name="user_input_type" value="mk">
                         <label for="id_mk_name">{% trans "Suggest an MK" %}</label>
+                        <input type="text" name="mk_name" id="id_mk_name">
+                        <input type="submit" value="{% trans "Submit" %}" class="btn">
+                    </form>
+                    <form method="post" action="." class="form-inline">{% csrf_token %}
+                        <input type="hidden" name="user_input_type" value="remove-mk">
+                        <label for="id_mk_name">{% trans "Remove an MK" %}</label>
                         <input type="text" name="mk_name" id="id_mk_name">
                         <input type="submit" value="{% trans "Submit" %}" class="btn">
                     </form>
@@ -110,8 +116,8 @@
                 <section class="card card-list">
                     <header><h2>{% trans "Bills" %}</h2></header>
                     <ul>
-                    {% for b in object.bills_first.all %}<li><a href="{% url bill-detail b.id %}">{{ b }}</a></li>{% endfor %}
-                    {% for b in object.bills_second.all %}<li><a href="{% url bill-detail b.id %}">{{ b }}</a></li>{% endfor %}
+                    {% for b in object.bills_first.all %}<li><a href="{% url 'bill-detail' b.id %}">{{ b }}</a></li>{% endfor %}
+                    {% for b in object.bills_second.all %}<li><a href="{% url 'bill-detail' b.id %}">{{ b }}</a></li>{% endfor %}
                     {% if user.is_authenticated %}
                     <li>
                         <form method="post" action="." class="form-inline">{% csrf_token %}
@@ -141,7 +147,7 @@
                       {% if forloop.first %}
                 <script type="text/html" id="annotationform">
                     <div class="annotation-form" id="annotationform-<%=speech_part.id%>">
-                        <form action="{% url annotatetext-post_annotation %}" method="post" accept-charset="utf-8" id="annotationrealform-<%=speech_part.id%>" class="annotationrealform">{% csrf_token %}
+                        <form action="{% url 'annotatetext-post_annotation' %}" method="post" accept-charset="utf-8" id="annotationrealform-<%=speech_part.id%>" class="annotationrealform">{% csrf_token %}
                         {% with annotation_obj|hash:"form" as annotation_form %}
                             <div class="annotationselection">
                               <span class="arrowhint">&#8658;</span>
@@ -235,41 +241,7 @@
             {% endif %}
         
             <aside class="sidebar sidebar-agendas">
-                <header><h2>{% trans "Tags" %}</h2></header>
-                <div id="tagging-container">
-                    <div id="tags">
-                        {% if object.tags %}
-                            {% for t in object.tags %}
-                                <a id="tag_{{t.id}}" href="{% url tag-detail slug=t %}" class="tag label">{{ t }}</a>
-                            {% endfor %}
-                        {% else %}
-                            <span id="no-tags-yet">{% trans "No tags yet" %}</span>
-                        {% endif %}
-                    </div>
-                </div>
-                {% if user.is_authenticated %}
-                    <div id="add_tags">
-                        <h3>{% trans "Edit Tags" %}</h3>
-                        <span id="possible_tags"></span><br>
-                        <a href="javascript:get_tags_list('{% url related-tags resource_name='tag' api_name='v2' app_label='committees' object_type='committee' object_id=object.committee.id related_name='meetings' %}');">{% trans "Click here for tags related to this committee" %}</a><br><a href="javascript:get_tags_list();">{% trans "Click here to see all available tags" %}</a>
-                        <div id="create_tag" style='display:none'>
-                            {% if perms.tagging.add_tag %}
-                                <form id="create_tag_form" action="#">{% csrf_token %}
-                                    <label for="tag">{% trans 'Create new tag' %}: </label>
-                                    <input type="hidden" name="app_label" id="app_label" value="committees">
-                                    <input type="hidden" name="object_type" value="committeemeeting">
-                                    <input type="hidden" name="id" value="{{object.id}}">
-                                    <input type="text" name="tag" id="tag">
-                                    <input type="submit" value="{% trans 'Send' %}">
-                                </form>
-                            {% else %}
-                                <div class="alert alert-block">{% trans "Please" %} <a href="{% url edit-profile %}">{% trans "validate your email" %}</a>{% trans " to create new tags" %}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="alert alert-block"><a href="{% url login %}?next={{request.get_full_path}}">{% trans "Login to edit tags" %}</a></div>
-                {% endif %}
+                {% include "auxiliary/tags_object_edit.html" with tags=object.tags %}
             </aside>
 
             <aside class="sidebar">
