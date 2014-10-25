@@ -5,6 +5,11 @@ from selenium import webdriver
 from django.test import LiveServerTestCase
 from sauceclient import SauceClient
 from knesset.browser_test_runner import browser, sauce_accesskey, sauce_username, sauce_platforms
+from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.support import expected_conditions as EC
 
 
 def on_platforms():
@@ -62,3 +67,18 @@ class BrowserTestCase(LiveServerTestCase):
                 self.driver.quit()
         else:
             self.driver.quit()
+
+    def _waitForTitleContains(self, title):
+        try:
+            WebDriverWait(self.driver, 10).until(EC.title_contains(title))
+            ok = True
+        except TimeoutException:
+            ok = False
+        self.assertTrue(ok, 'actual title = "%s" expects title to contain = "%s"'%(self.driver.title, title))
+
+    def _databases_names(self, include_mirrors=True):
+        """
+        this stops from doing some destructive stuff to the db (which might be an actual developer's db)
+        it's a hack but it works
+        """
+        return []
