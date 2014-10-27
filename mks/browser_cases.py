@@ -8,10 +8,11 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.select import By
 
 from mks.models import Member
 from committees.models import CommitteeMeeting
-from actstream import action
+from actstream import action, actor_stream
 
 @on_platforms()
 class MkCommitteePlenumTestCase(BrowserTestCase):
@@ -24,14 +25,11 @@ class MkCommitteePlenumTestCase(BrowserTestCase):
         """:type : WebElement"""
         elt.click()
         self._waitForTitleContains(_('Members and Parties').replace("&quot;", '"'))
-        elts = d.find_elements_by_class_name('party-member-name')
-        elts[0].click()
-        WebDriverWait(d, 10).until(lambda d: d.current_url.find("/member/") > -1)
-        match = re.search(r"/member/(\d+)/", d.current_url)
-        mkId = match.group(1) if match else False
-        self.assertTrue(mkId != False)
+        mkId = d.execute_script(
+            "return $('.party-member-photo a[href]').first().attr('href').match(/\/member\/(\d+)\//)[1];"
+        )
         mk = Member.objects.get(id=mkId)
-        # add some committee and plenum attendance
+        # add some fake committee and plenum attendance data
         for t in ['committee', 'plenum']:
             i = 0
             for cm in CommitteeMeeting.objects.filter(committee__type=t):
@@ -39,5 +37,8 @@ class MkCommitteePlenumTestCase(BrowserTestCase):
                 i = i + 1
                 if i > 10:
                     break
-        d.refresh()
-        
+            if i == 0:
+                self.fail('!!!')
+        d.get(self.live_server_url+'/member/'+mkId)
+        self._waitFor(EC.presence_of_element_located(By.CLASS_NAME))
+        Element

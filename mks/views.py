@@ -360,7 +360,7 @@ class MemberDetailView(DetailView):
             i = 0
             for action in actor_stream(member).filter(verb='attended'):
                 i = i + 1
-                if i == 20:
+                if i == 100:
                     break
                 committee_type = (action and action.target and
                                   action.target.committee and

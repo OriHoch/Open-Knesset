@@ -68,6 +68,14 @@ class BrowserTestCase(LiveServerTestCase):
         else:
             self.driver.quit()
 
+    def _waitFor(self, method, msg):
+        try:
+            WebDriverWait(self.driver, 10).until(method)
+            ok = True
+        except TimeoutException:
+            ok = False
+        self.assertTrue(ok, msg)
+
     def _waitForTitleContains(self, title):
         try:
             WebDriverWait(self.driver, 10).until(EC.title_contains(title))
