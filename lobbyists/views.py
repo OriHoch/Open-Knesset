@@ -5,7 +5,8 @@ from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseRedirect
 import json
 import sys
-
+from links.models import Link, LinksManager
+from forms import AddLinkForm
 
 class LobbyistsIndexView(ListView):
 
@@ -99,6 +100,9 @@ class LobbyistCorporationDetailView(DetailView):
         context['lobbyists'] = Lobbyist.objects.filter(id__in=context['object'].cached_data['combined_lobbyist_ids']).order_by('person__name')
         if context['object'] not in LobbyistCorporation.objects.current_corporations():
             context['warning_old_corporation'] = True
+
+        context['links'] = Link.objects.for_model(context['object'])
+        context['addLinkForm'] = AddLinkForm()
 
         return context
 

@@ -1,5 +1,5 @@
 {% extends "site_base.html" %}
-{% load i18n mks_tags avatar_tags %}{% load static from staticfiles %}
+{% load i18n mks_tags avatar_tags crispy_forms_tags %}{% load static from staticfiles %}
 {% block extratitle %}{{ object }}{% endblock %}
 {% block keywords %}{{ object }}{% endblock %}
 {% block description %}{{ object }} - {% trans 'Open Knesset - Opening the Knesset to the public' %}{% endblock %}
@@ -13,6 +13,10 @@
             {{ object }}
         {% endif %}
     </li>
+{% endblock %}
+
+{% block extrajs %}
+    <script type="text/javascript" src="{% static "js/lobbyists.js" %}"></script>
 {% endblock %}
 
 {% block divcontent %}
@@ -56,6 +60,21 @@
                             {% endfor %}
                         </li>
                     {% endif %}
+                    {% if links %}
+                        <li>
+                            {% trans "Links" %}:
+                            {% for link in links %}
+                                <a href="{{ link.url }}">{{ link.title }}</a>
+                                {% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                            {% if perms.lobbyists.can_edit %}
+                                , <a href="#add-lobbyistcorporation-link-modal" data-role="button" data-toggle="modal">{% trans "Add link" %}</a>
+                            {% endif %}
+                        </li>
+                    {% else %}
+                        {% trans "Links" %}:
+                        <a href="javascript:lobbyists.corporation_add_link('{{ object.id }}');">{% trans "Add link" %}</a>
+                    {% endif %}
                 </ul>
             </section>
             {% if lobbyists %}
@@ -81,4 +100,17 @@
             {% include "lobbyists/_suggest_change_section.html" %}
         </div>
     </div>
+    <div id="add-lobbyistcorporation-link-modal" class="modal hide fade suggest-modal" tabindex="-1" role="dialog" aria-labelledby="suggest-feedback-ModalLabel" aria-hidden="true">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+            <h3 id="add-lobbyistcorporationlink-ModalLabel">{% trans "Add Lobbyist Corporation Link" %}</h3>
+        </div>
+        <div class="modal-body">
+            {% crispy addLinkForm %}
+        </div>
+        <div class="modal-footer">
+            <input class="btn btn-primary" type="submit" value="{% trans "OK" %}" data-loading-text="{% trans "Sending..." %}"/>
+            <button class="btn" data-dismiss="modal" aria-hidden="true">{% trans "Close" %}</button>
+        </div>
+</div>
 {% endblock %}

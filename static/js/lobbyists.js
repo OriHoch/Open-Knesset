@@ -32,5 +32,8 @@ lobbyists = {
     },
     open_corporation: function(corporation_id) {
         $(".lobbyist-corporation[data-corporation-id='"+corporation_id+"'] .corporation-lobbyists").toggleClass('hidden');
+    },
+    corporation_add_link: function(corporation_id) {
+        console.log(corporation_id);
     }
 };
