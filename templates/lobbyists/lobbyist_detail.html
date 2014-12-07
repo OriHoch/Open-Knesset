@@ -53,12 +53,32 @@
                 </ul>
             </section>
             <section class="card card-list lobbyist-represents">
-                <header><h2><i class="fa fa-users"></i>{% trans "Lobbyist Represents" %}</h2></header>
+                <header>
+                    <h2>
+                        <i class="fa fa-users"></i>{% trans "Lobbyist Represents" %}
+                        <span id="lobbyist-company-search">
+                            <input type="text" placeholder="חפש בלקוחות" onkeyup="lobbyistRepresentsSearch()"/>
+                        </span>
+                    </h2>
+                </header>
                 <ul>
                     {% for represent in represents %}
                         <li>{{ represent.name }}</li>
                     {% endfor %}
                 </ul>
+                <script>
+                    function lobbyistRepresentsSearch() {
+                        $('.lobbyist-represents li').each(function() {
+                            var val = $('#lobbyist-company-search input').val();
+                            var txt = $(this).text();
+                            if (txt.indexOf(val) > -1) {
+                                $(this).removeClass('hidden');
+                            } else {
+                                $(this).addClass('hidden');
+                            }
+                        });
+                    }
+                </script>
             </section>
             {% if object.committee_meetings.count > 0 %}
             <section class="card card-list">
