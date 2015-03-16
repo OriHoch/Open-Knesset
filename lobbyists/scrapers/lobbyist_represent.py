@@ -14,17 +14,20 @@ class LobbyistRepresentListStorage(ListStorage):
     """
     This storage gets a list of lobbyist represent dicts
     and converts each dict to a LobbyistRepresent object
-    It first checks the source_id - if there is already a LobbyistRepresent object with the same id and name,
+    It first checks the name - if there is already a LobbyistRepresent object with the name,
         it will use it and not create a new object
     then it checks the represents data against the latest represents data for the LobbyistRepresent object
         if the data match - no new LobbyistRepresentData object will be created
+
+    the lobbyist represents source_id changes even if it's logically the same represents
+    so we should just ignore that field when comparing lobbyist represents
     """
 
     _commitInterval = 1
 
-    def _get_last_lobbyist_represent_data(self, data):
+    def _get_last_lobbyist_represent_data(self, lobbyist_represent, data):
         try:
-            last_lobbyist_represent_data = LobbyistRepresentData.objects.filter(scrape_time__isnull=False).latest('scrape_time')
+            last_lobbyist_represent_data = LobbyistRepresentData.objects.filter(lobbyist_represent=lobbyist_represent, scrape_time__isnull=False).latest('scrape_time')
         except ObjectDoesNotExist:
             last_lobbyist_represent_data = None
         if last_lobbyist_represent_data is not None:
@@ -35,8 +38,8 @@ class LobbyistRepresentListStorage(ListStorage):
         return last_lobbyist_represent_data
 
     def _addValueToData(self, data, value):
-        lobbyist_represent, is_created = LobbyistRepresent.objects.get_or_create(source_id=value['id'], name=value['name'])
-        represent_data = self._get_last_lobbyist_represent_data(value)
+        lobbyist_represent, is_created = LobbyistRepresent.objects.get_or_create(name=value['name'])
+        represent_data = self._get_last_lobbyist_represent_data(lobbyist_represent, value)
         if represent_data is None:
             LobbyistRepresentData.objects.create(
                 source_id=value['id'],
