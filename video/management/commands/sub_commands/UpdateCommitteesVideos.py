@@ -47,7 +47,7 @@ class UpdateCommitteesVideos(SubCommand):
         self._debug('fetching committee index page from '+self.PORTAL_KNESSET_COMMITTEES_INDEX_PAGE_URL)
         try:
             rf=urllib.urlopen(self.PORTAL_KNESSET_COMMITTEES_INDEX_PAGE_URL)
-            return rf.read().decode('windows-1255').encode('utf-8')
+            return rf.read(); #.decode('windows-1255').encode('utf-8')
         except Exception, e:
             self._warn('could not fetch committees_index_page, exception: '+str(e))
             traceback.print_exc(file=sys.stdout)
@@ -175,6 +175,7 @@ class UpdateCommitteesVideos(SubCommand):
                         groups=mtch.groups()
                         if len(groups)==8:
                             mmsurl=groups[0]
+                            mmsurl = mmsurl.split("','")[0]
                             if mmsurl not in mmsurls:
                                 title=groups[7]
                                 # try to get a better title
@@ -203,10 +204,11 @@ class UpdateCommitteesVideos(SubCommand):
                     groups=mtch.groups()
                     if len(groups)==2:
                         videos.append({
-                            'mmsurl':groups[0],
+                            'mmsurl':groups[0].split("','")[0],
                             'title':groups[1],
                             'datetime':datetime.datetime.now()
                         })
+            print videos
             return videos
         except Exception, e:
             self._warn('exception while trying to get videos from broadcasts url')

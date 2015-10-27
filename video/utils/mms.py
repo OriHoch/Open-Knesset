@@ -1,5 +1,8 @@
-import sys
-from libmimms2 import libmms,core as mimms
+try:
+    from libmimms2 import libmms,core as mimms
+except OSError:
+    print "You need to install mms support library: sudo apt-get install libmms-dev"
+    exit()
 
 class _options():
     def __init__(self,url,filename,time_limit,resume=False):
@@ -10,6 +13,7 @@ class _options():
         self.quiet=True
         self.resume=True
         self.clobber=False
+        self.connections_count=1
 
 def get_size(url):
     stream=libmms.Stream(url, 1e6)

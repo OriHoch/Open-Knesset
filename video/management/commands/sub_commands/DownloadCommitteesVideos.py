@@ -35,6 +35,8 @@ class DownloadCommitteesVideos(SubCommand):
                 except Exception, e:
                     self._warn('failed to get mms stream size, exception = '+str(e))
                     traceback.print_exc(file=sys.stdout)
+                    video.group = video.group[:16]+'-ERR'
+                    video.save()
                 else:
                     self._debug('got mms stream size = '+str(streamsize))
                     mins_remaining=round(self._timer_remaining()/60)

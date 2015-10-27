@@ -5,6 +5,7 @@ from optparse import make_option
 from video.management.commands.sub_commands.AddVideo import AddVideo
 
 class Command(NoArgsCommand):
+    help = 'Add a video object from supported source types (youtube) and relate to supported object types (MKs)'
 
     option_list = NoArgsCommand.option_list + (
         make_option('--video-link',action='store',dest='video-link',
