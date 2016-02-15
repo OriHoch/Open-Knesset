@@ -1,0 +1,50 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block bodyclass %}bulk-import-hamishmar-votes{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+        &#8207;&rsaquo; <a href="{% url 'admin:app_list' app_label="laws" %}">{{ "laws"|capfirst|escape }}</a>
+        &#8207;&rsaquo; {% trans 'Bulk Import Hamishmar Votes' %}
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div id="content-main">
+        <h3>{{ msg }}</h3>
+        {% if approve_votes %}
+            <table>
+                <tr>
+                    <td>Vote Date</td>
+                    <td>Protocol URL</td>
+                    <td>Voted For</td>
+                    <td>Voted Against</td>
+                    <td>Errors</td>
+                </tr>
+                {% for vote in approve_votes %}
+                    <tr>
+                        <td>{{ vote.date|date:"d/m/Y" }}</td>
+                        <td><a href="{{ vote.protocol_url }}">{{ vote.protocol_url }}</a></td>
+                        <td>{{ vote.num_voted_for }}</td>
+                        <td>{{ vote.num_voted_against }}</td>
+                        <td>{% if vote.errors %}
+                            {% for error in vote.errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        {% else %}
+                            No Errors ʘ‿ʘ
+                        {% endif %}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <form action="{% url "bulk-import-hamishmar-votes" %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <input type="submit"/>
+            </form>
+        {% endif %}
+    </div>
+{% endblock %}
