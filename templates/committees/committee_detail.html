@@ -36,6 +36,7 @@
                 $(this).popover('show');
             });
         });
+
     </script>
 {% endblock %}
 {% block description %}{{ object.name }} - {% trans 'Open Knesset - Opening the Knesset to the public' %}{% endblock %}
@@ -45,10 +46,10 @@
 
 
 {% block breadcrumbs %}
-        {% ifnotequal object.type 'plenum' %}
-            <li><a href="{% url 'committee-list' %}">{% trans "Committees" %}</a> <span class="divider">/</span></li>
-        {% endifnotequal %}
-        <li class="active">{{object}}</li>
+    {% ifnotequal object.type 'plenum' %}
+        <li><a href="{% url 'committee-list' %}">{% trans "Committees" %}</a> <span class="divider">/</span></li>
+    {% endifnotequal %}
+    <li class="active">{{ object }}</li>
 {% endblock %}
 
 {% block divcontent %}
@@ -62,63 +63,65 @@
                             {% ifequal object.type 'plenum' %}
                                 {% trans "Knesset Plenum" %}
                             {% else %}
-                                {{object}}
+                                {{ object }}
                             {% endifequal %}
                         </h1>
-                        <p>{{object.description|linebreaksbr}}</p>
+                        <p>{{ object.description|linebreaksbr }}</p>
                     </div>
                 </div>
                 {% ifequal object.type 'committee' %}
                     <div class="span6 social-details">
                         <div class="spacer fill">
-                            {% include "committees/committee_member_photos.html" with extra_class="committee-members"%}
+                            {% include "committees/committee_member_photos.html" with extra_class="committee-members" %}
                         </div>
                     </div>
                 {% endifequal %}
             </div>
         </section>
     {% endif %}
-    
+
 
     <div class="row">
         <div class="cards span8">
             <section class="card card-list">
                 <header><h2><i class="fa fa-calendar"></i>{% trans 'Future Meetings' %}</h2></header>
                 <ul>
-                {% for o in future_meetings_list %}
-                    {% include "events/_event_li.html" %}
-                {% empty %}
-                    <li>{% trans "None" %}</li>
-                {% endfor %}
+                    {% for o in future_meetings_list|dictsortreversed:"when" %}
+                        {% include "events/_event_li.html" %}
+                    {% empty %}
+                        <li>{% trans "None" %}</li>
+                    {% endfor %}
                 </ul>
             </section>
             <section class="card card-list">
-                <header><h2><i class="fa fa-minus-circle"></i>{% trans 'Meetings for which a protocol was not yet published' %}</h2></header>
+                <header><h2><i
+                        class="fa fa-minus-circle"></i>{% trans 'Meetings for which a protocol was not yet published' %}
+                </h2></header>
                 <ul>
-                {% for o in protocol_not_yet_published_list %}
-                    {% include "events/_event_li.html" %}
-                {% empty %}
-                    <li>{% trans "None" %}</li>
-                {% endfor %}
+                    {% for o in protocol_not_yet_published_list %}
+                        {% include "events/_event_li.html" %}
+                    {% empty %}
+                        <li>{% trans "None" %}</li>
+                    {% endfor %}
                 </ul>
             </section>
             <section class="card card-list card-list-latest">
                 <header><h2><i class="fa fa-clock-o"></i>{% trans 'Last Meetings' %}</h2></header>
                 <ul>
-                {% for o in meetings_list|dictsortreversed:"date" %}
-                    {% include "committees/_meeting_li.html" with add_li=1 %}
-                {% empty %}
-                    <li>{% trans "None" %}</li>
-                {% endfor %}
-                    <li><a href="all_meetings/">{% trans 'more...'%}</a></li>
+                    {% for o in meetings_list|dictsortreversed:"date" %}
+                        {% include "committees/_meeting_li.html" with add_li=1 %}
+                    {% empty %}
+                        <li>{% trans "None" %}</li>
+                    {% endfor %}
+                    <li><a href="all_meetings/">{% trans 'more...' %}</a></li>
                 </ul>
             </section>
             {% ifnotequal object.type 'plenum' %}
                 <section class="card card-list">
                     <header><h2><i class="fa fa-file-text"></i>{% trans 'MMM Documents' %}</h2></header>
                     <ul id="recent-mmm">
-                    {% include "mks/mmm_partials.html" with object_list=object.sorted_mmm_documents %}
-                    <li><a href="mmm_documents/">{% trans 'more...'%}</a></li>
+                        {% include "mks/mmm_partials.html" with object_list=object.sorted_mmm_documents %}
+                        <li><a href="mmm_documents/">{% trans 'more...' %}</a></li>
                     </ul>
                 </section>
             {% endifnotequal %}
@@ -130,42 +133,44 @@
                     <h2>{% trans "Suggested Agenda Topics" %}</h2>
                     <ul id="committee-topics">
                         <li class="agenda-mini">
-                        {% if user.is_authenticated %}
-                            {% if perms.committees.add_topic %}
-                                <a class="btn" href="{% url 'edit-committee-topic' object.id %}">{% trans "Suggest Topic" %}</a>
+                            {% if user.is_authenticated %}
+                                {% if perms.committees.add_topic %}
+                                    <a class="btn"
+                                       href="{% url 'edit-committee-topic' object.id %}">{% trans "Suggest Topic" %}</a>
+                                {% else %}
+                                    {% trans 'to suggest a topic' %}, {% trans 'Please' %}
+                                    <a class="bold-link"
+                                       href="{% url 'edit-profile' %}">{% trans 'validate your email' %}</a>
+                                {% endif %}
                             {% else %}
-                                {% trans 'to suggest a topic' %}, {% trans 'Please' %} 
-                                <a class="bold-link" href="{% url 'edit-profile' %}">{% trans 'validate your email' %}</a> 
+                                <a href='{% url 'login' %}?next={{ request.get_full_path }}'>{% trans 'Please login to suggest a topic' %}</a>
                             {% endif %}
-                        {% else %}
-                                <a href='{% url 'login' %}?next={{request.get_full_path}}'>{% trans 'Please login to suggest a topic' %}</a>
-                        {% endif %}
                         </li>
-                    {% include "committees/_topics_summary.html" with object_list=topics%}
+                        {% include "committees/_topics_summary.html" with object_list=topics %}
                     </ul>
                 </aside>
             {% endifnotequal %}
 
             <aside class="sidebar sidebar-comments">
                 <h2>{% trans "Latest Annotations" %}</h2>
-                    <ul class="annotations">
+                <ul class="annotations">
                     {% for a in annotations|slice:":5" %}
                         <li class="agenda-mini">
-                            <a rel="popover" href="{{a.get_absolute_url }}" title="{{a.flag_value}}">
-                                "...{{a.selection}}..." ({{a.content_object.header}})
+                            <a rel="popover" href="{{ a.get_absolute_url }}" title="{{ a.flag_value }}">
+                                "...{{ a.selection }}..." ({{ a.content_object.header }})
                                 <div class="tip" style="display:none">
                                     <div class="user_id">
                                         <a href="{% url 'public-profile' a.user.username %}">{% avatar a.user 45 %}
-                                        {{ a.user }}</a>
+                                            {{ a.user }}</a>
                                     </div>
-                                    {{a.comment|linebreaks}}
+                                    {{ a.comment|linebreaks }}
                                 </div>
                             </a>
                         </li>
                     {% empty %}
                         <li>{% trans "No annotations yet..." %}</li>
                     {% endfor %}
-                    </ul>
+                </ul>
             </aside>
 
         </div> <!-- span4 -->
