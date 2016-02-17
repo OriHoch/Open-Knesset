@@ -58,5 +58,5 @@ lawsurlpatterns = patterns(
     url(r'^vote/auto_complete/$',
         vote_auto_complete, name='vote-auto-complete'),
 
-    url(r'admin/bulk-import-hamishmar-votes/$', 'laws.bulk_import_hamishmar_votes.views.bulk_import_hamishmar_votes', name='bulk-import-hamishmar-votes'),
+    url(r'admin/bulk-import-hamishmar-votes/$', 'laws.bulk_import_hamishmar_votes.views.main', name='bulk-import-hamishmar-votes'),
 )
