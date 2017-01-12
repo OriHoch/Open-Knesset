@@ -38,6 +38,7 @@ class BillProposal(models.Model):
 class PrivateProposal(BillProposal):
     class Meta:
         app_label = 'laws'
+        ordering = ['date']
 
     proposal_id = models.IntegerField(blank=True, null=True)
     proposers = models.ManyToManyField('mks.Member', related_name='proposals_proposed', blank=True, null=True)
@@ -48,6 +49,7 @@ class PrivateProposal(BillProposal):
 class KnessetProposal(BillProposal):
     class Meta:
         app_label = 'laws'
+        ordering = ['date']
 
     committee = models.ForeignKey('committees.Committee', related_name='bills', blank=True, null=True)
     booklet_number = models.IntegerField(blank=True, null=True)
@@ -58,6 +60,7 @@ class KnessetProposal(BillProposal):
 class GovProposal(BillProposal):
     class Meta:
         app_label = 'laws'
+        ordering = ['date']
 
     booklet_number = models.IntegerField(blank=True, null=True)
     bill = models.OneToOneField('Bill', related_name='gov_proposal', blank=True, null=True)
